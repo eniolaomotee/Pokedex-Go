@@ -1,2 +1,2 @@
 # Pokedex-Go
-Mini PokeMon lookup REPL
+Mini Pokemon lookup REPL

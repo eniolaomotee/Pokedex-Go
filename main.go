@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
-	"github.com/eniolaomotee/Pokedex-Go/internal/pokecache"
 	"time"
 
+	internal "github.com/eniolaomotee/Pokedex-Go/internal"
+	"github.com/eniolaomotee/Pokedex-Go/internal/pokecache"
 )
 
 type config struct {
@@ -41,10 +41,12 @@ func main(){
 			return 
 		}
 		word := scanner.Text()
-		text := strings.ToLower(word)
-		firstWord := strings.Fields(text)
+		text := internal.CleanInput(word)
+		if len(text) == 0 {
+			continue
+		}
 
-		cmd := firstWord[0]
+		cmd := text[0]
 
 		if command, ok := getCommands()[cmd]; ok{
 			if err := command.callback(cfg); err != nil{

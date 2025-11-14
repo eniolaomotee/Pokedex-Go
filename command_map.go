@@ -22,7 +22,6 @@ type LocationArea struct{
 
 func commandMap(cfg *config) error{
 
-
 	url := "https://pokeapi.co/api/v2/location-area"
 
 	// Use if there is a next page(cfg.Next) or previous page(cfg.Previous)
@@ -45,6 +44,8 @@ func commandMap(cfg *config) error{
 		for _, location := range data.Results{
 			fmt.Println(location.Name)
 		}
+
+		return  nil
 	}
 	
 
@@ -61,11 +62,13 @@ func commandMap(cfg *config) error{
 
 	if res.StatusCode > 299{
 		log.Fatalf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
-
 	}
 	if err != nil{
 		log.Fatal(err)
 	}
+
+	// cache the response data
+	cfg.cache.Add(url, body)
 
 	// Unmarshal the JSON response into a struct
 	var data LocationArea
@@ -73,9 +76,6 @@ func commandMap(cfg *config) error{
 	if err != nil{
 		log.Fatalf("Error unmarshaling JSON: %v", err)
 	}
-
-	// cache the response data
-	cfg.cache.Add(url, body)
 
 	cfg.Next = data.Next
 	cfg.Previous = data.Previous
@@ -88,6 +88,15 @@ func commandMap(cfg *config) error{
 
 
 func commandMapB(cfg *config) error{
+
+	// Check if there is a previous page
+	if cfg.Previous == nil{
+		fmt.Println("No previous page available.")
+		return  nil
+	}
+
+	url := *cfg.Previous
+
 
 	if cached, ok := cfg.cache.Get(*cfg.Previous); ok{
 		var data LocationArea
@@ -105,14 +114,6 @@ func commandMapB(cfg *config) error{
 		}
 		return nil
 	}
-
-
-	if cfg.Previous == nil{
-		fmt.Println("No previous page available.")
-		return  nil
-	}
-
-	url := *cfg.Previous
 
 	// Make the HTTP GET request
 	res, err := http.Get(url)
@@ -137,14 +138,12 @@ func commandMapB(cfg *config) error{
 	if err != nil{
 		log.Fatalf("Error unmarshaling JSON: %v", err)
 	}
-
+	
 	cfg.Next = data.Next
 	cfg.Previous = data.Previous
 
 	for _, location := range data.Results{
 		fmt.Println(location.Name)
 	}
-
 	return  nil
-	
 }

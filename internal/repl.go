@@ -1,4 +1,4 @@
-package repl
+package internal
 
 import (
 	"strings"

@@ -5,15 +5,32 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"github.com/eniolaomotee/Pokedex-Go/internal/pokecache"
+	"time"
+
 )
+
+type config struct {
+	Next *string
+	Previous *string
+	cache *pokecache.Cache
+
+}
 
 type cliCommand struct{
 	name string
 	description string
-	callback func() error
+	callback func(*config) error
 }
 
+
+
 func main(){
+
+	cfg := &config{}
+
+	cache := pokecache.NewCache(5 * time.Second)
+	cfg.cache = cache
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -30,7 +47,7 @@ func main(){
 		cmd := firstWord[0]
 
 		if command, ok := getCommands()[cmd]; ok{
-			if err := command.callback(); err != nil{
+			if err := command.callback(cfg); err != nil{
 				fmt.Println("error", err)
 			}
 			continue
@@ -55,6 +72,16 @@ func getCommands() map[string]cliCommand{
 			name: "exit",
 			description: "Exit the Pokedex",
 			callback: commandExit,
+		},
+		"map":{
+			name: "map",
+			description: "Location areas of Pokemon map",
+			callback: commandMap,
+		},
+		"mapb":{
+			name :"mapb",
+			description: "Previous page of location areas of Pokemon map",
+			callback: commandMapB,
 		},
 	}
 }

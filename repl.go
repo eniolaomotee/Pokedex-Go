@@ -1,12 +1,16 @@
 package main
 
 import (
-	"strings"
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
+	"math/rand"
+
 	"github.com/eniolaomotee/Pokedex-Go/internal/pokeapi"
 )
+
+
 
 
 
@@ -16,6 +20,8 @@ type config struct {
 	pokeapiClient *pokeapi.Client
 	cmd string
 	args []string
+	rng *rand.Rand
+	pokeMon map[string]pokeapi.CatchPokeMon
 }
 
 

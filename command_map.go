@@ -1,149 +1,68 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"log"
-	"net/http"
+	"fmt"	
 )
 
 
-type LocationArea struct{
-	Count int `json:"count"`
-	Next *string `json:"next"`
-	Previous *string `json:"previous"`
-	Results []struct{
-		Name string `json:"name"`
-		URL string `json:"url"`
-	} `json:"results"`
-}
 
-
-func commandMap(cfg *config) error{
-
-	url := "https://pokeapi.co/api/v2/location-area"
-
-	// Use if there is a next page(cfg.Next) or previous page(cfg.Previous)
-	if cfg.Next != nil{
-		url = *cfg.Next
-	}
-
-	cached, ok := cfg.cache.Get(url)
-	if ok{
-		var data LocationArea
-		err := json.Unmarshal(cached, &data)
-		if err != nil{
-			log.Fatalf("Error unmarshaling cached JSON : %v", err)
-
-		}
-
-		cfg.Next = data.Next
-		cfg.Previous = data.Previous
-
-		for _, location := range data.Results{
-			fmt.Println(location.Name)
-		}
-
-		return  nil
-	}
-	
-
-	
-
-	// Make the HTTP GET request
-	res, err := http.Get(url)
+func commandMap(cfg *config, args []string) error{
+	locationResp, err := cfg.pokeapiClient.ListLocations(cfg.Next)
 	if err != nil{
-		log.Fatalf("Error fetching locations: %v", err)
+		return err
 	}
 
-	body,err := io.ReadAll(res.Body)
-	res.Body.Close()
+	cfg.Next = locationResp.Next
+	cfg.Previous = locationResp.Previous
 
-	if res.StatusCode > 299{
-		log.Fatalf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
-	}
-	if err != nil{
-		log.Fatal(err)
-	}
-
-	// cache the response data
-	cfg.cache.Add(url, body)
-
-	// Unmarshal the JSON response into a struct
-	var data LocationArea
-	err = json.Unmarshal(body, &data)
-	if err != nil{
-		log.Fatalf("Error unmarshaling JSON: %v", err)
-	}
-
-	cfg.Next = data.Next
-	cfg.Previous = data.Previous
-
-	for _, location := range data.Results{
+	for _, location := range locationResp.Results{
 		fmt.Println(location.Name)
 	}
+
 	return nil
 }
 
 
-func commandMapB(cfg *config) error{
-
-	// Check if there is a previous page
+func commandMapB(cfg *config, args []string) error{
 	if cfg.Previous == nil{
-		fmt.Println("No previous page available.")
-		return  nil
+		return fmt.Errorf("no previous page")
 	}
-
-	url := *cfg.Previous
-
-
-	if cached, ok := cfg.cache.Get(*cfg.Previous); ok{
-		var data LocationArea
-		err := json.Unmarshal(cached, &data)
-		if err != nil{
-			log.Fatalf("Error unmarshaling cached JSON : %v", err)
-
-		}
-
-		cfg.Next = data.Next
-		cfg.Previous = data.Previous
-
-		for _, location := range data.Results{
-			fmt.Println(location.Name)
-		}
-		return nil
-	}
-
-	// Make the HTTP GET request
-	res, err := http.Get(url)
+	locationResp, err := cfg.pokeapiClient.ListLocations(cfg.Previous)
 	if err != nil{
-		log.Fatalf("error fectching locations : %v", err)
+		return err
 	}
+	cfg.Next = locationResp.Next
+	cfg.Previous = locationResp.Previous
 
-	body, err := io.ReadAll(res.Body)
-	res.Body.Close()
-
-	if res.StatusCode > 299{
-		log.Fatalf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
-	}
-	if err != nil{
-		log.Fatalf("Error reading response body: %v", err)
-	}
-
-	cfg.cache.Add(url, body)
-
-	var data LocationArea
-	err = json.Unmarshal(body, &data)
-	if err != nil{
-		log.Fatalf("Error unmarshaling JSON: %v", err)
-	}
-	
-	cfg.Next = data.Next
-	cfg.Previous = data.Previous
-
-	for _, location := range data.Results{
+	for _, location := range locationResp.Results{
 		fmt.Println(location.Name)
 	}
-	return  nil
+
+	return nil
+
+	
+}
+
+
+
+func commandExplore(cfg *config, args []string) error{
+	if len(args) < 1{
+		return fmt.Errorf("please provide a location area name")
+	}
+
+	locationName := args[0]
+
+	locationArea, err := cfg.pokeapiClient.GetLocation(locationName)
+	if err != nil{
+		return err
+	}
+
+	fmt.Printf("Location Area: %s\n", locationArea.Name)
+	fmt.Println("Pokemon Encounters:")
+	for _, encounter := range locationArea.PokemonEncounters{
+		fmt.Printf("- %s\n", encounter.Pokemon.Name)
+	}
+
+	return nil
+	
 }

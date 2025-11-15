@@ -1,5 +1,6 @@
 package pokeapi
 
+
 type LocationArea struct{
 	Count int `json:"count"`
 	Next *string `json:"next"`

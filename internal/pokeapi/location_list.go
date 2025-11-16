@@ -13,6 +13,7 @@ func (c *Client) ListLocations (pageURL *string) (LocationArea, error) {
 		url = *pageURL
 	}
 
+	//check if it exists in cache
 	if val, ok := c.cache.Get(url); ok {
 		locationsResp := LocationArea{}
 		err := json.Unmarshal(val, &locationsResp)
@@ -23,11 +24,13 @@ func (c *Client) ListLocations (pageURL *string) (LocationArea, error) {
 		return locationsResp, nil
 	}
 
+	// if it doesn't exist in cache
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return LocationArea{}, err
 	}
 
+	// use httpClient to make request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return LocationArea{}, err
@@ -45,6 +48,7 @@ func (c *Client) ListLocations (pageURL *string) (LocationArea, error) {
 		return LocationArea{}, err
 	}
 
+	// add to cache
 	c.cache.Add(url, dat)
 	return locationsResp, nil
 }

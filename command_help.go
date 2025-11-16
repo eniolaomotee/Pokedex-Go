@@ -45,9 +45,21 @@ func commandCatch(cfg *config, args []string) error{
 	if cfg.rng.Float64() < p{
 		cfg.pokeMon[pokemon.Name] = pokemon
 		fmt.Printf("You caught a %s\n",pokemon.Name)
+		fmt.Println("You may now inspect it with the inspect command.")
 	}else{
 		fmt.Printf("%s escaped !\n",pokemon.Name)
 	}
 
+	return nil
+}
+
+
+func commandPokedex(cfg *config, args []string) error{
+	fmt.Println("Your Pokedex:")
+
+	for _, p := range cfg.pokeMon{
+		fmt.Printf(" - %s\n",p.Name)
+	}
+	
 	return nil
 }

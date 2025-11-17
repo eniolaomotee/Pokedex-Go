@@ -1,15 +1,17 @@
 package main
 
 import (
-	"bufio"
+	//"bufio"
 	"fmt"
-	"os"
+	//"os"
 	"strings"
 	"math/rand"
-
 	"github.com/eniolaomotee/Pokedex-Go/internal/pokeapi"
+	"github.com/mattn/go-tty"
 )
 
+
+const prompt = "Pokedex > "
 
 
 
@@ -35,15 +37,20 @@ type cliCommand struct{
 
 
 func StartRepl(cfg *config){
-	scanner := bufio.NewScanner(os.Stdin)
+	// scanner := bufio.NewScanner(os.Stdin)
 
-	for {
-		fmt.Print("Pokedex > ")
-		scanned := scanner.Scan()
-		if !scanned{
-			return 
-		}
-		word := scanner.Text()
+	// define a channel to receive from keypress function
+	lines := make(chan string)
+
+	go keyPress(lines)
+
+	for word := range lines {
+		// fmt.Print("Pokedex > ")
+		// scanned := scanner.Scan()
+		// if !scanned{
+		// 	return 
+		// }
+		// word := scanner.Text()
 		text := CleanInput(word)
 		if len(text) == 0 {
 			continue
@@ -123,4 +130,104 @@ func getCommands() map[string]cliCommand{
 			callback: commandPokedex,
 		},
 	}
+}
+
+
+
+func keyPress(out chan <- string){
+
+	const prompt = "Pokedex >" 
+
+
+	tty, err := tty.Open()
+	if err != nil{
+		return 
+	}
+	defer tty.Close()
+
+	history := []string{"help","exit","map","mapb","explore","catch","inspect","pokedex"}
+	HIndex := len(history)
+	
+	var line string
+	for {
+		r, err := tty.ReadRune()
+		if err != nil{
+			return
+		}
+
+		switch r {
+
+		case 3: // Ctrl + C
+			fmt.Println("\n bye")
+			return
+
+
+		case 13:  // Enter
+			fmt.Println()
+			if line != "" {
+				history = append(history, line)
+				HIndex = len(history)
+				out <- line
+			}
+			line = ""
+			fmt.Print(prompt)
+		
+		case 127:  // Backspace
+			if len(line) > 0{
+				line = line[:len(line)-1]
+				redraw(line)
+			}
+		
+		
+		case 27: // Esc prefix - possible arrow key
+			// read the two runes : '[' and code
+			r2, err2 := tty.ReadRune()
+			if err2 != nil{
+				continue
+			}
+			r3, err3 := tty.ReadRune()
+			if err3 != nil{
+				continue
+			}
+
+
+			if r2 == '['{
+				switch r3 {
+				case 'A': // Up arrow
+					if HIndex > 0 {
+						HIndex--
+						line = history[HIndex]
+						redraw(line)
+					}
+				case 'B': // Down arrow
+					if HIndex < len(history) -1 {
+						HIndex++
+						line = history[HIndex]
+					}else{
+						HIndex = len(history)
+						line = ""
+					}
+					redraw(line)
+				}
+			}
+		
+		default: 
+			// printable char
+			if r >= 32 { // ignore control chars
+				line += string(r)
+				redraw(line)
+
+			}
+			
+		}
+
+	}
+}
+
+func redraw(line string){
+	// move to start, clear line,
+	fmt.Print("\r\033[K")
+    fmt.Print(prompt)
+    fmt.Print(line)
+
 }
